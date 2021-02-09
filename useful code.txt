@@ -1,0 +1,356 @@
+
+this is code that might be useful in case you want to write your own games
+this code was developed by me for use in most of my homebrews
+
+
+--------------------------------fadein and fade out------------------------------------
+fadeout:
+ld b,4
+.loopfadeout
+ld a,5
+call delay
+dec b
+ld a,b
+cp 0
+jp nz,.fo1
+ld a,$E4
+	ld [rBGP], a
+	ld	a, [rLCDC]	; fetch LCD Config. (Each bit is a flag)
+	or	LCDCF_OBJON	; enable sprites through "OBJects ON" flag
+	ld	[rLCDC], a	; save LCD Config. Sprites are now visible. 
+ret
+.fo1
+ld a,b
+cp 1
+jp nz,.fo2
+ld a,$F9
+	ld [rBGP], a
+.fo2
+ld a,b
+cp 2
+jp nz,.fo3
+ld a,$FE
+	ld [rBGP], a
+.fo3
+ld a,b
+cp 3
+jp nz,.loopfadeout
+ld a,$FF
+	ld [rBGP], a
+
+JP .loopfadeout
+
+
+fadein:
+	ld	a, [rLCDC]	; fetch LCD Config. (Each bit is a flag)
+	xor	LCDCF_OBJON	; enable sprites through "OBJects ON" flag
+	ld	[rLCDC], a	; save LCD Config. Sprites are now visible. 
+ld b,4
+.loopfadein
+ld a,5
+call delay
+dec b
+ld a,b
+cp 0
+jp nz,.fi1
+ld a,$FF
+	ld [rBGP], a
+ret
+.fi1
+ld a,b
+cp 1
+jp nz,.fi2
+ld a,$FE
+	ld [rBGP], a
+.fi2
+ld a,b
+cp 2
+jp nz,.fi3
+ld a,$F9
+	ld [rBGP], a
+.fi3
+ld a,b
+cp 3
+jp nz,.loopfadein
+ld a,$E4
+	ld [rBGP], a
+JP .loopfadein
+----------------------------------the delay method------------------------------------
+delay::
+halt
+nop
+dec a
+cp 00
+jp nz,delay
+ret
+------------------------------------get tile (x,y) -----------------------------------
+gettile::; x=a, y=b
+push af
+;divide b by 8
+ld a,b
+and %11111000
+rra
+rra
+rra
+ld b,a
+pop af
+;divide a by 8
+and %11111000
+rra
+rra
+rra
+;
+dec a
+dec b
+ld l,a
+ld a,$00
+ld h,a
+ld a,b
+.gettileloop
+dec a
+cp 0
+ld bc,32
+jp z,.gettilenoloop
+add hl, bc
+jp .gettileloop
+.gettilenoloop
+ld bc,$9800
+add hl,bc
+ld a,[hl]
+ret
+--------------------------music player-------------------------------------------------
+UpdateChannels1::
+ld a,[NR13]
+cp a,00
+jp z,.noch1
+ld [rNR13],a
+ld a,[NR14]
+ld [rNR14],a
+ld a,$00
+ld [rNR10],a
+ld a,$81
+ld [rNR11],a
+ld a,$43
+ld [rNR12],a
+.noch1
+ld a,[NR23]
+cp a,00
+ret z
+ld [rNR23],a
+ld a,[NR24]
+ld [rNR24],a
+ld a,$81
+ld [rNR21],a
+ld a,$83
+ld [rNR22],a
+ret
+
+UpdateChannels2::
+ld a,[NR13]
+cp a,00
+jp z,.noch1
+ld [rNR13],a
+ld a,[NR14]
+ld [rNR14],a
+ld a,$00
+ld [rNR10],a
+ld a,$41
+ld [rNR11],a
+ld a,$5B
+ld [rNR12],a
+.noch1
+ld a,[NR23]
+cp a,00
+ret z
+ld [rNR23],a
+ld a,[NR24]
+ld [rNR24],a
+ld a,$41
+ld [rNR21],a
+ld a,$9C
+ld [rNR22],a
+ret
+
+
+UpdateCH1::
+ld a,[CH1note2PlayH];get addr of next note
+ld h,a
+ld a,[CH1note2PlayL]
+ld l,a
+ld a,[hl];get note byte for nr13
+cp $00;if 00 then no note
+jr z,.NoNoteCH1
+
+    ld      hl,freq
+    ld      c,a
+    ld      b,$00
+    add     hl,bc
+    ld      a,[hl+]
+ld [NR13],a
+    ld      a,[hl]
+or $80
+ld [NR14],a
+jp .endch1
+.NoNoteCH1
+ld [NR13],a
+.endch1
+ld a,[CH1note2PlayH];get addr of next note
+ld h,a
+ld a,[CH1note2PlayL]
+ld l,a
+inc hl
+ld a, h;store next note 2 be played addr in ram
+ld [CH1note2PlayH],a
+ld a, l
+ld [CH1note2PlayL],a
+ld a,[CH1loopADDRL]
+ld b, a
+ld a,[CH1note2PlayL]
+cp a, b
+jr nz,.NoLoopMusicCH1
+ld a,[CH1loopADDRH]
+ld b, a
+ld a,[CH1note2PlayH]
+cp a, b
+jr nz,.NoLoopMusicCH1
+ld a,[CH1musicLoopStartH];loop music
+ld [CH1note2PlayH],a
+ld a,[CH1musicLoopStartL]
+ld [CH1note2PlayL],a
+.NoLoopMusicCH1
+RET
+
+
+
+
+
+
+UpdateCH2::
+ld a,[CH2note2PlayH];get addr of next note
+ld h,a
+ld a,[CH2note2PlayL]
+ld l,a
+ld a,[hl];get note byte for nr13
+cp $00;if 00 then no note
+jr z,.NoNoteCH2
+
+    ld      hl,freq
+    ld      c,a
+    ld      b,$00
+    add     hl,bc
+    ld      a,[hl+]
+ld [NR23],a
+    ld      a,[hl]
+or $80
+ld [NR24],a
+jp .endch2
+.NoNoteCH2
+ld [NR23],a
+.endch2
+ld a,[CH2note2PlayH];get addr of next note
+ld h,a
+ld a,[CH2note2PlayL]
+ld l,a
+inc hl
+ld a, h;store next note 2 be played addr in ram
+ld [CH2note2PlayH],a
+ld a, l
+ld [CH2note2PlayL],a
+ld a,[CH2loopADDRL]
+ld b, a
+ld a,[CH2note2PlayL]
+cp a, b
+jr nz,.NoLoopMusicCH1
+ld a,[CH2loopADDRH]
+ld b, a
+ld a,[CH2note2PlayH]
+cp a, b
+jr nz,.NoLoopMusicCH1
+ld a,[CH2musicLoopStartH];loop music
+ld [CH2note2PlayH],a
+ld a,[CH2musicLoopStartL]
+ld [CH2note2PlayL],a
+.NoLoopMusicCH1
+RET
+---------------------------variables used in the game------------------------------------------------
+SECTION "vars", WRAM0[$C200]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;vars;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+currentjpad::
+db
+bpower::
+db
+level::
+db
+randomcounter4lh::
+db
+randomcounter4ll::
+db
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;sprite collision;;;;
+x1::
+db
+x2::
+db
+y1::
+db
+y2::
+db
+half::
+db
+enemyvar1:
+db
+enemyvar2:
+db
+enemyvar3:
+db
+bigchungus:
+db
+block1:
+db 
+block2:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;sound vars;;;;;;;;;;;;
+CH1note2PlayH::
+db
+CH1note2PlayL::
+db
+CH1loopADDRL::
+db
+CH1loopADDRH::
+db
+CH1musicLoopStartH::
+db
+CH1musicLoopStartL::
+db
+CH2note2PlayH::
+db
+CH2note2PlayL::
+db
+CH2loopADDRL::
+db
+CH2loopADDRH::
+db
+CH2musicLoopStartH::
+db
+CH2musicLoopStartL::
+db
+db
+NR13::
+db
+NR14::
+db
+NR23::
+db
+NR24::
+db
+
+------------------------------------------------------------------------------------
+(c) jona32u4hm
+
+
+
+
+
+
