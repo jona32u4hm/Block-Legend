@@ -57,7 +57,15 @@ Enemies:
 
 	there are 3 bosses and one extra enemy
 can you beat them all?
-
+----------------How to win----------------------------
+In order to win a level you have to enter a doorway, which 
+look like a black square(■). In the first levels there are 
+arrows over the doorways to help people that are playing for 
+the first time.
+↓
+■
+In other levels there are no doorways, so you need to move 
+the [%] blocks over a % sign.
 ------------------------------------------------------
 
 ´´´Copyright (c) 2021 Jonatán Hidalgo Morales <jona32u4hm@gmail.com>
